@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑白画图板 - 机器学习数据生成</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            color: #7f8c8d;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+        }
+        
+        .control-section {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .canvas-section {
+            flex: 2;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .output-section {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .setting-group {
+            margin-bottom: 20px;
+        }
+        
+        .setting-group h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        
+        .setting-group h3 i {
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .input-group {
+            flex: 1;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #34495e;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background: #3498db;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.95rem;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .btn-success {
+            background: #2ecc71;
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        
+        .canvas-container {
+            background: #ecf0f1;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            overflow: auto;
+            margin-bottom: 20px;
+            max-height: 70vh;
+        }
+        
+        .drawing-canvas {
+            display: grid;
+            gap: 1px;
+            background: #bdc3c7;
+            border: 1px solid #95a5a6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .pixel {
+            background: white;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        
+        .pixel.black {
+            background: #2c3e50;
+        }
+        
+        .pixel.edge {
+            background: #95a5a6;
+        }
+        
+        .transform-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group input {
+            width: auto;
+        }
+        
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .output-title {
+            font-size: 1.2rem;
+            color: #2c3e50;
+        }
+        
+        .array-output {
+            background: white;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            height: 250px;
+            overflow: auto;
+            white-space: pre;
+            color: #2c3e50;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(200%);
+            transition: transform 0.5s;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .tool-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .edge-options {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .input-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>黑白画图板</h1>
+        <p class="subtitle">自定义尺寸绘制图像并生成0-1阵列，支持边缘浅色块</p>
+    </header>
+    
+    <div class="container">
+        <div class="app-container">
+            <div class="control-section">
+                <div class="setting-group">
+                    <h3><i>⚙️</i> 网格设置</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="gridWidth">宽度 (8-32)</label>
+                            <input type="number" id="gridWidth" min="8" max="32" value="28">
+                        </div>
+                        <div class="input-group">
+                            <label for="gridHeight">高度 (8-32)</label>
+                            <input type="number" id="gridHeight" min="8" max="32" value="28">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="pixelSize">像素大小</label>
+                        <select id="pixelSize">
+                            <option value="15">小</option>
+                            <option value="20" selected>中</option>
+                            <option value="25">大</option>
+                        </select>
+                    </div>
+                    <button id="createGridBtn" class="btn-success" style="margin-top: 15px;">创建网格</button>
+                </div>
+                
+                <div class="setting-group">
+                    <h3><i>🎨</i> 绘图工具</h3>
+                    <div class="tool-buttons">
+                        <button id="drawBtn" class="btn-success">画笔</button>
+                        <button id="eraseBtn">橡皮擦</button>
+                        <button id="clearBtn" class="btn-danger">清空画布</button>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <h3><i>🔄</i> 图像变换</h3>
+                    <div class="transform-options">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="rotateOption">
+                            <label for="rotateOption">逆时针旋转90度</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="mirrorOption">
+                            <label for="mirrorOption">左右镜像</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="setting-group edge-options">
+                    <h3><i>🔍</i> 边缘效果</h3>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="edgeEffect" checked>
+                        <label for="edgeEffect">启用边缘浅色块</label>
+                    </div>
+                    <div class="input-group" style="margin-top: 10px;">
+                        <label for="edgeValue">边缘值 (0.1-0.9)</label>
+                        <input type="number" id="edgeValue" min="0.1" max="0.9" step="0.1" value="0.3">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="canvas-section">
+                <div class="canvas-container">
+                    <div class="drawing-canvas" id="drawingCanvas"></div>
+                </div>
+                <div style="text-align: center;">
+                    <button id="generateBtn" class="btn-success">生成阵列</button>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <div class="output-header">
+                    <h3 class="output-title">生成的阵列</h3>
+                    <button id="copyBtn">复制到剪贴板</button>
+                </div>
+                <pre class="array-output" id="arrayOutput">请先创建网格并绘制图像，然后点击"生成阵列"按钮</pre>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">阵列已复制到剪贴板！</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const canvas = document.getElementById('drawingCanvas');
+            const gridWidthInput = document.getElementById('gridWidth');
+            const gridHeightInput = document.getElementById('gridHeight');
+            const pixelSizeSelect = document.getElementById('pixelSize');
+            const createGridBtn = document.getElementById('createGridBtn');
+            const drawBtn = document.getElementById('drawBtn');
+            const eraseBtn = document.getElementById('eraseBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const generateBtn = document.getElementById('generateBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const arrayOutput = document.getElementById('arrayOutput');
+            const rotateOption = document.getElementById('rotateOption');
+            const mirrorOption = document.getElementById('mirrorOption');
+            const edgeEffect = document.getElementById('edgeEffect');
+            const edgeValueInput = document.getElementById('edgeValue');
+            const notification = document.getElementById('notification');
+            
+            // 初始化变量
+            let isDrawing = false;
+            let currentTool = 'draw';
+            let gridWidth = parseInt(gridWidthInput.value);
+            let gridHeight = parseInt(gridHeightInput.value);
+            let pixelSize = parseInt(pixelSizeSelect.value);
+            let edgeValue = parseFloat(edgeValueInput.value);
+            
+            // 创建画布网格
+            function createCanvas() {
+                gridWidth = parseInt(gridWidthInput.value);
+                gridHeight = parseInt(gridHeightInput.value);
+                pixelSize = parseInt(pixelSizeSelect.value);
+                edgeValue = parseFloat(edgeValueInput.value);
+                
+                // 验证输入
+                if (gridWidth < 8 || gridWidth > 32 || gridHeight < 8 || gridHeight > 32) {
+                    alert('宽度和高度必须在8到32之间');
+                    return;
+                }
+                
+                canvas.innerHTML = '';
+                canvas.style.gridTemplateColumns = `repeat(${gridWidth}, ${pixelSize}px)`;
+                canvas.style.gridTemplateRows = `repeat(${gridHeight}, ${pixelSize}px)`;
+                
+                for (let i = 0; i < gridHeight; i++) {
+                    for (let j = 0; j < gridWidth; j++) {
+                        const pixel = document.createElement('div');
+                        pixel.classList.add('pixel');
+                        pixel.dataset.x = j;
+                        pixel.dataset.y = i;
+                        pixel.dataset.value = '0'; // 默认白色
+                        
+                        pixel.addEventListener('mousedown', startDrawing);
+                        pixel.addEventListener('mouseenter', draw);
+                        
+                        canvas.appendChild(pixel);
+                    }
+                }
+                
+                // 添加全局鼠标事件
+                document.addEventListener('mouseup', stopDrawing);
+            }
+            
+            // 开始绘制
+            function startDrawing(e) {
+                isDrawing = true;
+                draw(e);
+            }
+            
+            // 绘制函数
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                const pixel = e.target;
+                if (currentTool === 'draw') {
+                    // 设置当前像素为黑色
+                    pixel.classList.add('black');
+                    pixel.classList.remove('edge');
+                    pixel.dataset.value = '1';
+                    
+                    // 添加边缘效果
+                    if (edgeEffect.checked) {
+                        addEdgeEffect(pixel);
+                    }
+                } else if (currentTool === 'erase') {
+                    // 擦除当前像素
+                    pixel.classList.remove('black');
+                    pixel.classList.remove('edge');
+                    pixel.dataset.value = '0';
+                }
+            }
+            
+            // 添加边缘效果
+            function addEdgeEffect(centerPixel) {
+                const x = parseInt(centerPixel.dataset.x);
+                const y = parseInt(centerPixel.dataset.y);
+                
+                // 检查周围的8个像素
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue; // 跳过中心像素
+                        
+                        const nx = x + j;
+                        const ny = y + i;
+                        
+                        // 确保在网格范围内
+                        if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
+                            const neighborIndex = ny * gridWidth + nx;
+                            const neighborPixel = canvas.children[neighborIndex];
+                            
+                            // 如果邻居不是黑色且不是边缘，则设置为边缘
+                            if (!neighborPixel.classList.contains('black') && 
+                                !neighborPixel.classList.contains('edge')) {
+                                neighborPixel.classList.add('edge');
+                                neighborPixel.dataset.value = edgeValue.toString();
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 停止绘制
+            function stopDrawing() {
+                isDrawing = false;
+            }
+            
+            // 清空画布
+            function clearCanvas() {
+                const pixels = document.querySelectorAll('.pixel');
+                pixels.forEach(pixel => {
+                    pixel.classList.remove('black');
+                    pixel.classList.remove('edge');
+                    pixel.dataset.value = '0';
+                });
+            }
+            
+            // 生成阵列
+            function generateArray() {
+                const pixels = document.querySelectorAll('.pixel');
+                if (pixels.length === 0) {
+                    arrayOutput.textContent = "请先创建网格！";
+                    return "";
+                }
+                
+                let array = [];
+                
+                for (let i = 0; i < gridHeight; i++) {
+                    let row = [];
+                    for (let j = 0; j < gridWidth; j++) {
+                        const index = i * gridWidth + j;
+                        row.push(pixels[index].dataset.value);
+                    }
+                    array.push(row);
+                }
+                
+
+                // 应用变换
+                if (mirrorOption.checked) {
+                    array = mirrorHorizontally(array);
+                }
+                if (rotateOption.checked) {
+                    array = rotate90CounterClockwise(array);
+                }
+                
+                // 格式化输出
+                let output = '[\n';
+                array.forEach(row => {
+                    output += '  [' + row.join(', ') + '],\n';
+                });
+                output = output.slice(0, -2) + '\n]';
+                
+                arrayOutput.textContent = output;
+                return output;
+            }
+            
+            // 逆时针旋转90度
+            function rotate90CounterClockwise(matrix) {
+                const rows = matrix.length;
+                const cols = matrix[0].length;
+                const rotated = [];
+                
+                for (let j = cols - 1; j >= 0; j--) {
+                    const newRow = [];
+                    for (let i = 0; i < rows; i++) {
+                        newRow.push(matrix[i][j]);
+                    }
+                    rotated.push(newRow);
+                }
+                
+                return rotated;
+            }
+            
+            // 左右镜像
+            function mirrorHorizontally(matrix) {
+                return matrix.map(row => [...row].reverse());
+            }
+            
+            // 复制到剪贴板
+            function copyToClipboard() {
+                const text = arrayOutput.textContent;
+                if (text.includes('请先') || text.trim() === '') {
+                    showNotification('请先生成阵列！');
+                    return;
+                }
+                
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        showNotification('阵列已复制到剪贴板！');
+                    })
+                    .catch(err => {
+                        showNotification('复制失败，请手动复制');
+                    });
+            }
+            
+            // 显示通知
+            function showNotification(message) {
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // 事件监听器
+            createGridBtn.addEventListener('click', createCanvas);
+            
+            drawBtn.addEventListener('click', () => {
+                currentTool = 'draw';
+                drawBtn.classList.add('btn-success');
+                eraseBtn.classList.remove('btn-success');
+            });
+            
+            eraseBtn.addEventListener('click', () => {
+                currentTool = 'erase';
+                eraseBtn.classList.add('btn-success');
+                drawBtn.classList.remove('btn-success');
+            });
+            
+            clearBtn.addEventListener('click', clearCanvas);
+            
+            generateBtn.addEventListener('click', generateArray);
+            
+            copyBtn.addEventListener('click', copyToClipboard);
+            
+            // 初始化画布
+            createCanvas();
+        });
+    </script>
+</body>
+</html>

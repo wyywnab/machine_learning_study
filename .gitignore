@@ -1,0 +1,7 @@
+/.git
+/.idea
+/emnist_data
+__pycache__
+*.bak
+*.docx
+*.pt
