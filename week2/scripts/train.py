@@ -116,7 +116,7 @@ def main():
         "seed": 608,
         "batch_size": 15,
         "learning_rate": 0.001,
-        "weight_decay": 3e-4,  # 1e-4 ~ 5e-4 范围内
+        "weight_decay": 3e-4,
         "label_smoothing": 0.05,
         "step_size": 10,  # StepLR的步长
         "gamma": 0.1,  # StepLR的衰减系数
