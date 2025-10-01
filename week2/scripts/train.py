@@ -10,7 +10,7 @@ from torchvision import transforms
 from torchvision.datasets import EMNIST
 from torch.utils.tensorboard import SummaryWriter
 from models.cnn_small import SmallCNN
-from models.resnet18_small_bak import SmallResNet
+from models.resnet18_small import SmallResNet
 from Utils import EarlyStopping
 from Utils import draw_confusion_matrix
 from week2.scripts.models.mlp import MLP
@@ -27,21 +27,18 @@ def get_data_loaders(batch_size, seed, num_workers):
         transforms.Normalize((0.1307,), (0.3081,))
     ])
 
-    # 训练集
     train_set = EMNIST("..\..\emnist_data", split="letters", transform=to_tensor, download=True, train=True)
 
-    # 划分训练集和验证集 (80% 训练, 20% 验证)
+    #划分训练集和验证集
     train_size = int(0.8 * len(train_set))
     val_size = len(train_set) - train_size
     train_subset, val_subset = torch.utils.data.random_split(
         train_set, [train_size, val_size],
-        generator=torch.Generator().manual_seed(seed)  # 确保可重复性
+        generator=torch.Generator().manual_seed(seed)
     )
 
-    # 测试集
     test_set = EMNIST("..\..\emnist_data", split="letters", transform=to_tensor, download=True, train=False)
 
-    # 创建数据加载器
     train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=num_workers)
     val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=num_workers)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=num_workers)
@@ -56,7 +53,6 @@ def evaluate(data_loader, net, criterion):
     with torch.no_grad():
         for (x, y) in data_loader:
             x, y = x.to(device), y.to(device)
-            #outputs = net.forward(x.view(-1, 28 * 28))
             outputs = net.forward(x)
             for i, output in enumerate(outputs):
                 if torch.argmax(output) == y[i]:
@@ -83,7 +79,6 @@ def get_confusion_matrix_image(data_loader, net, criterion, checkpoint, config):
     with torch.no_grad():
         for (x, y) in data_loader:
             x, y = x.to(device), y.to(device)
-            #outputs = net.forward(x.view(-1, 28 * 28))
             outputs = net.forward(x)
             for i, output in enumerate(outputs):
                 label_true.append(int(y[i]))
@@ -152,9 +147,6 @@ def main():
 
     writer = SummaryWriter(log_dir=current_folder)
 
-    #writer.add_hparams(hparam_dict=config,metric_dict={})
-
-    #net = Net64()
     net = SmallResNet()
     net = net.to(device)
 
@@ -192,16 +184,6 @@ def main():
     init_val_acc, init_val_loss = evaluate(val_loader, net, criterion)
     init_test_acc, init_test_loss = evaluate(test_loader, net, criterion)
     print(f"Initial Train Accuracy: {init_train_acc:.5f}, Validation Accuracy: {init_val_acc:.5f}, Test Accuracy: {init_test_acc:.5f}")
-    initial_metrics = {
-        "best_val_accuracy": init_val_acc,
-        "best_val_loss": init_val_loss,
-        "best_epoch": 0,
-        "test_accuracy": init_test_acc,
-        "test_loss": init_test_loss,
-        "total_training_time": 0,
-        "avg_throughput_samples_sec": 0
-    }
-    #writer.add_hparams(hparam_dict=config, metric_dict=initial_metrics)
 
     writer.add_scalar('Accuracy/train', init_train_acc, 0)
     writer.add_scalar('Accuracy/val', init_val_acc, 0)
@@ -219,7 +201,6 @@ def main():
         net.train()
         running_loss = 0.0
         for i, (x, y) in enumerate(train_loader):
-            #net.zero_grad()
             batch_start_time = time.time()
             optimizer.zero_grad()
             x, y = x.to(device), y.to(device)
@@ -315,7 +296,6 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     timeid = datetime.now().strftime("%y%m%d_%H%M%S")
-    #current_folder = ".\\experiments\\exp{}\\".format(time)
     current_folder = os.path.join("experiments", "exp{}".format(timeid))
     if not os.path.exists(current_folder):
         os.makedirs(current_folder)

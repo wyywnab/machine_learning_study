@@ -1,177 +1,67 @@
-# 基于PyTorch实现ResNet-18模型
-import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
-# 定义BasicBlock类，实现ResNet-18的残差结构
-class BasicBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, stride, downsample):
-        """
-        参数说明：
-        in_channel: 输入特征图的通道数
-        out_channel: 输出特征图的通道数
-        stride: 卷积步长（控制空间分辨率变化）
-        downsample: 是否需要下采样（用于调整输入与输出维度差异）
-        """
-        # 调用父类nn.Module的构造函数
-        super(BasicBlock, self).__init__()
-
-        # 第一个卷积层（3x3卷积核）
-        self.conv1 = nn.Conv2d(
-            in_channels=in_channel,
-            out_channels=out_channel,
-            kernel_size=3,
-            stride=stride,  # 控制空间分辨率变化
-            padding=1,  # 保持特征图尺寸不变（当stride=1时）
-            bias=False  # 卷积层不使用偏置，因为BN会处理偏移
+# 定义残差块ResBlock
+class ResBlock(nn.Module):
+    def __init__(self, inchannel, outchannel, stride=1):
+        super(ResBlock, self).__init__()
+        # 这里定义了残差块内连续的2个卷积层
+        self.left = nn.Sequential(
+            nn.Conv2d(inchannel, outchannel, kernel_size=3, stride=stride, padding=1, bias=False),
+            nn.BatchNorm2d(outchannel),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(outchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(outchannel)
         )
-
-        # 批归一化层（加速训练并稳定模型）
-        self.bn1 = nn.BatchNorm2d(out_channel)
-
-        # 激活函数（ReLU非线性变换）
-        self.relu = nn.ReLU()
-
-        # 第二个卷积层（3x3卷积核）
-        self.conv2 = nn.Conv2d(
-            in_channels=out_channel,
-            out_channels=out_channel,
-            kernel_size=3,
-            stride=1,  # 固定步长为1
-            padding=1,  # 保持特征图尺寸
-            bias=False
-        )
-
-        # 第二个批归一化层
-        self.bn2 = nn.BatchNorm2d(out_channel)
-
-        # 下采样模块（当输入与输出维度不匹配时使用）
-        self.downsample = downsample
+        self.shortcut = nn.Sequential()
+        if stride != 1 or inchannel != outchannel:
+            # shortcut，这里为了跟2个卷积层的结果结构一致，要做处理
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(outchannel)
+            )
 
     def forward(self, x):
-        # 如果下采样操作不为空，则需要对输入进行下采样得到捷径分支的输出
-        if self.downsample is not None:
-            residual = self.downsample(x)
-        else:  # 保存输入数据，便于后面进行残差链接
-            residual = x
-
-        # 前向传播主路径
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        # 残差连接核心：将主路径输出与调整后的输入相加
-        out += residual  # 这里原代码有误，应该是residual而不是identity
-        out = self.relu(out)  # 非线性激活在残差相加后执行
+        out = self.left(x)
+        # 将2个卷积层的输出跟处理过的x相加，实现ResNet的基本结构
+        out = out + self.shortcut(x)
+        out = F.relu(out)
 
         return out
 
-
-# 定义完整的ResNet-18网络结构
 class SmallResNet(nn.Module):
-    def __init__(self, num_classes):
-        """
-        参数：
-        num_classes: 分类任务的类别数量
-        """
-        # 调用父类nn.Module的构造函数
+    def __init__(self, num_classes=27):
         super(SmallResNet, self).__init__()
-
-        # 第一个卷积层（输入通道数设为4可能需要根据实际输入调整）
-        self.conv1 = nn.Conv2d(
-            in_channels=1,  # 输入通道数为3（需根据实际输入维度修改）
-            out_channels=64,  # 输出通道数
-            kernel_size=3,  # 大卷积核用于特征提取
-            stride=1,  # 初始空间分辨率减半
-            padding=1,  # 保持尺寸计算：(7-1)/2=3
-            bias=False
+        self.inchannel = 64
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.ReLU()
         )
+        self.layer1 = self.make_layer(ResBlock, 64, 2, stride=1)
+        self.layer2 = self.make_layer(ResBlock, 128, 2, stride=2)
+        self.layer3 = self.make_layer(ResBlock, 256, 2, stride=2)
+        self.layer4 = self.make_layer(ResBlock, 512, 2, stride=2)
+        self.fc = nn.Linear(512, num_classes)
 
-        self.bn1 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU()
-        """self.maxpool = nn.MaxPool2d(  # 初始最大池化进一步减半空间尺寸
-            kernel_size=3,
-            stride=2,
-            padding=1
-        )"""
-        self.maxpool = nn.Identity()
-
-        # 创建四个残差层，分别对应resnet18的四个stage
-        # 第一个残差层，输出通道数64，残差块个数2，不进行下采样
-        self.layer1 = nn.Sequential(
-            BasicBlock(64, 64, 1, None),  # 原代码basic_block应该为BasicBlock
-            BasicBlock(64, 64, 1, None)
-        )
-        # 第二个残差层，输出通道数128，残差块个数2，步长为2，进行下采样
-        self.layer2 = nn.Sequential(
-            BasicBlock(
-                64, 128, 2,
-                # 下采样模块：1x1卷积调整通道并下采样
-                downsample=nn.Sequential(
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, stride=2, bias=False),
-                    nn.BatchNorm2d(128)
-                )
-            ),
-            BasicBlock(128, 128, 1, None)
-        )
-        # 第三个残差层，输出通道数256，残差块个数2，步长为2，进行下采样
-        self.layer3 = nn.Sequential(
-            BasicBlock(
-                128, 256, 2,
-                downsample=nn.Sequential(
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, stride=2, bias=False),
-                    nn.BatchNorm2d(256)
-                )
-            ),
-            BasicBlock(256, 256, 1, None)
-        )
-        # 第四个残差层，输出通道数512，残差块个数2，步长为2，进行下采样
-        self.layer4 = nn.Sequential(
-            BasicBlock(
-                256, 512, 2,
-                downsample=nn.Sequential(
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=2, bias=False),
-                    nn.BatchNorm2d(512)
-                )
-            ),
-            BasicBlock(512, 512, 1, None)
-        )
-
-        # 全局平均池化（自适应输出尺寸为1x1）
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-
-        # 全连接层（分类器）
-        self.fc = nn.Linear(512, num_classes)  # 输入维度为最后通道数512
-
-        # 参数初始化
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                # 使用He初始化（Kaiming初始化）
-                nn.init.kaiming_normal_(
-                    m.weight,
-                    mode='fan_out',
-                    nonlinearity='relu'
-                )
+    # 这个函数主要是用来，重复同一个残差块
+    def make_layer(self, block, channels, num_blocks, stride):
+        strides = [stride] + [1] * (num_blocks - 1)
+        layers = []
+        for stride in strides:
+            layers.append(block(self.inchannel, channels, stride))
+            self.inchannel = channels
+        return nn.Sequential(*layers)
 
     def forward(self, x):
-        # 初始卷积处理
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        # 通过四个残差层
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        # 全局池化和分类
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)  # 展平为向量
-        x = self.fc(x)
-
-        return x
+        # 在这里，整个ResNet18的结构就很清晰了
+        out = self.conv1(x)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.avg_pool2d(out, 4)
+        out = out.view(out.size(0), -1)
+        out = self.fc(out)
+        return out
