@@ -1,5 +1,5 @@
 amp_enabled: true
-batch_size: 16
+batch_size: 64
 clip_value: 1.0
 early_stopping_patience: 7
 eta_min: 3.0e-06
