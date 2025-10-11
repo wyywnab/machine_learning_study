@@ -1,0 +1,2 @@
+exp_id,exp_name,seed,best_epoch,lr_scheduler,data_enhancement,cbam_enabled,top-1_acc,duration
+exp251011_201841,test,608,4,CosineAnnealingLR,affine,True,0.1,401.98104548454285

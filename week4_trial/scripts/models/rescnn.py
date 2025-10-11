@@ -1,0 +1,120 @@
+import torch
+
+from week3.scripts.models.attention import ChannelAttention, SpatialAttention
+
+
+class CBAM(torch.nn.Module):
+    def __init__(self, channels, ratio=16, kernel_size=7):
+        super(CBAM, self).__init__()
+        self.channel_attention = ChannelAttention(channels, ratio)
+        self.spatial_attention = SpatialAttention(kernel_size)
+
+    def forward(self, x):
+        x = self.channel_attention(x) * x
+        x = self.spatial_attention(x) * x
+        return x
+
+class ResCNN(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = torch.nn.ReLU(inplace=False)
+
+        self.c0 = torch.nn.Sequential(
+            torch.nn.Conv2d(1, 4, 7, 1, 3),
+            torch.nn.MaxPool2d(2)
+        )
+        self.m1 = torch.nn.Sequential(
+            torch.nn.Conv2d(4, 4, 3, 1, 1),
+            torch.nn.BatchNorm2d(4),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(4, 4, 3, 1, 1),
+            torch.nn.BatchNorm2d(4),
+            CBAM(4)
+        )
+        self.c1 = torch.nn.Sequential(
+            torch.nn.Conv2d(4, 8, 3, 1, 1),
+            torch.nn.BatchNorm2d(8),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(8, 8, 3, 1, 1),
+            torch.nn.BatchNorm2d(8)
+        )
+        self.proj1 = torch.nn.Conv2d(4, 8, 1)
+        self.m2 = torch.nn.Sequential(
+            torch.nn.Conv2d(8, 8, 3, 1, 1),
+            torch.nn.BatchNorm2d(8),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(8, 8, 3, 1, 1),
+            torch.nn.BatchNorm2d(8),
+            CBAM(8)
+        )
+        self.c2 = torch.nn.Sequential(
+            torch.nn.Conv2d(8, 16, 3, 1, 1),
+            torch.nn.BatchNorm2d(16),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(16, 16, 3, 1, 1),
+            torch.nn.BatchNorm2d(16)
+        )
+        self.proj2 = torch.nn.Conv2d(8, 16, 1)
+        self.m3 = torch.nn.Sequential(
+            torch.nn.Conv2d(16, 16, 3, 1, 1),
+            torch.nn.BatchNorm2d(16),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(16, 16, 3, 1, 1),
+            torch.nn.BatchNorm2d(16),
+            CBAM(16)
+        )
+        self.c3 = torch.nn.Sequential(
+            torch.nn.Conv2d(16, 32, 3, 1, 1),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(32, 32, 3, 1, 1),
+            torch.nn.BatchNorm2d(32)
+        )
+        self.proj3 = torch.nn.Conv2d(16, 32, 1)
+        self.m4 = torch.nn.Sequential(
+            torch.nn.Conv2d(32, 32, 3, 1, 1),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(32, 32, 3, 1, 1),
+            torch.nn.BatchNorm2d(32),
+            CBAM(32)
+        )
+        self.c4 = torch.nn.AvgPool2d(2)
+        self.c5 = torch.nn.Sequential(
+            torch.nn.Flatten(),
+            torch.nn.Linear(32*7*7, 32),
+            torch.nn.Linear(32,27)
+        )
+
+    def basics(self, callback, steps, inp):
+        out = inp
+        for i in range(steps):
+            identity = out
+            out = callback(out)
+            out = out + identity
+            out = self.relu(out)
+        return out
+
+    def trans(self, m, pr, inp):
+        identity = inp
+        out = m(inp)
+        identity = pr(identity)
+        out = out + identity
+        out = self.relu(out)
+        return out
+
+    def forward(self, x):
+        out = self.c0(x)
+
+        out = self.basics(self.m1, 2, out)
+        out = self.trans(self.c1, self.proj1, out)
+        out = self.basics(self.m2, 2, out)
+        out = self.trans(self.c2, self.proj2, out)
+        out = self.basics(self.m3, 2, out)
+        out = self.trans(self.c3, self.proj3, out)
+        out = self.basics(self.m4, 2, out)
+
+        out = self.c4(out)
+        out = self.c5(out)
+
+        return out

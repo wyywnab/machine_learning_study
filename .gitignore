@@ -1,5 +1,6 @@
 /.git
 /.idea
+/cifar10_data
 /emnist_data
 __pycache__
 *.bak
