@@ -1,16 +1,16 @@
-name: test
+name: baseline
 amp_enabled: true
 batch_size: 64
 cbam_enabled: true
 clip_value: 1.0
-data_enhancement: affine
+data_enhancement:
 early_stopping_patience: 15
 eta_min: 3.0e-06
 gamma: 0.1
 label_smoothing: 0.05
 learning_rate: 0.0001
-max_epoch: 4
-model: SmallCNN
+max_epoch: 100
+model: SmallResNet
 num_workers: 4
 optimizer: AdamW
 lr_scheduler: CosineAnnealingLR

@@ -26,23 +26,42 @@ class EarlyStopping:
         self.best_checkpoint = {}
 
     def __call__(self, val_loss, val_acc, epoch, optimizer, model):
-        score = -val_loss
-        if val_acc > self.best_val_acc:
-            self.best_val_acc = val_acc
+        # 基于准确率进行早停判断
+        score = val_acc
 
+        # 总是更新最佳准确率
+        improved_acc = False
+        if val_acc > self.best_val_acc + self.delta:
+            self.best_val_acc = val_acc
+            improved_acc = True
+
+        # 首次运行
         if self.best_score is None:
             self.best_score = score
             self.save_checkpoint(val_loss, epoch, optimizer, model)
-        elif score < self.best_score + self.delta:
+            return
+
+        # 判断是否有提升
+        if score > self.best_score + self.delta:
+            # 有提升
+            self.best_score = score
+            self.save_checkpoint(val_loss, epoch, optimizer, model)
+            self.counter = 0
+            if self.verbose:
+                print(f'Validation accuracy improved to {val_acc:.4f}')
+        elif improved_acc:
+            # 准确率有提升但综合评分没有，也保存检查点（可选）
+            self.save_checkpoint(val_loss, epoch, optimizer, model)
+            self.counter = 0
+            if self.verbose:
+                print(f'Validation accuracy improved to {val_acc:.4f}')
+        else:
+            # 没有提升
             self.counter += 1
             if self.verbose:
                 print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
-        else:
-            self.best_score = score
-            self.save_checkpoint(val_loss, epoch, optimizer, model)
-            self.counter = 0
 
     def save_checkpoint(self, val_loss, epoch, optimizer, model):
         '''保存当前最佳模型'''

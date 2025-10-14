@@ -7,6 +7,8 @@ Read curves_template.csv and generate two separate charts:
 Rules: matplotlib only, one chart per plot, no explicit colors or styles.
 """
 import argparse
+import os.path
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -38,9 +40,9 @@ def plot_loss_for_exp(df, exp_name, out_path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--curves_csv", type=Path, default=Path("curves_template.csv"))
-    ap.add_argument("--loss_exp", type=str, default="baseline")
-    ap.add_argument("--out_dir", type=Path, default=Path("."))
+    ap.add_argument("--curves_csv", type=Path, default=Path(os.path.join("scripts", "experiments0", "all_curves.csv")))
+    ap.add_argument("--loss_exp", type=str, default="test")
+    ap.add_argument("--out_dir", type=Path, default=Path("figs"))
     args = ap.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)

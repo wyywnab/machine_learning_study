@@ -7,6 +7,8 @@ from torch.utils.tensorboard import SummaryWriter
 from models.cnn_small import SmallCNN, SmallCNNCBAM
 from models.resnet18_small import SmallResNet
 from Utils import EarlyStopping
+from week4.scripts.models.resnet18_ext import Resnet18Ext
+
 
 class Trainer:
     def __init__(self, base_folder, config, device, train_loader, val_loader):
@@ -59,7 +61,9 @@ class Trainer:
             else:
                 net = SmallCNN()
         elif config["model"] == "SmallResNet":
-            net = SmallResNet(config["cbam_enabled"])
+            net = SmallResNet(cbam_enabled=config["cbam_enabled"])
+        elif config["model"] == "Resnet18Ext":
+            net = Resnet18Ext(cbam_enabled=config["cbam_enabled"])
         else:
             print("Illegal Model Name!")
             exit(0)

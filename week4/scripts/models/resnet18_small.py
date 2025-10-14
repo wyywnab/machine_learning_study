@@ -15,10 +15,13 @@ class CBAM(nn.Module):
         x = self.spatial_attention(x) * x
         return x
 
-# 定义残差块ResBlock
+
+# 修改ResBlock以支持CBAM
 class ResBlock(nn.Module):
-    def __init__(self, inchannel, outchannel, stride=1):
+    def __init__(self, inchannel, outchannel, stride=1, use_cbam=False):
         super(ResBlock, self).__init__()
+        self.use_cbam = use_cbam
+
         # 这里定义了残差块内连续的2个卷积层
         self.left = nn.Sequential(
             nn.Conv2d(inchannel, outchannel, kernel_size=3, stride=stride, padding=1, bias=False),
@@ -27,6 +30,7 @@ class ResBlock(nn.Module):
             nn.Conv2d(outchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(outchannel)
         )
+
         self.shortcut = nn.Sequential()
         if stride != 1 or inchannel != outchannel:
             # shortcut，这里为了跟2个卷积层的结果结构一致，要做处理
@@ -35,61 +39,60 @@ class ResBlock(nn.Module):
                 nn.BatchNorm2d(outchannel)
             )
 
+        # 如果使用CBAM，在残差块内部添加CBAM模块
+        if self.use_cbam:
+            self.cbam = CBAM(outchannel)
+
     def forward(self, x):
         out = self.left(x)
+
+        # 如果使用CBAM，在残差连接之前应用CBAM
+        if self.use_cbam:
+            out = self.cbam(out)
+
         # 将2个卷积层的输出跟处理过的x相加，实现ResNet的基本结构
         out = out + self.shortcut(x)
         out = F.relu(out)
 
         return out
 
+
 class SmallResNet(nn.Module):
     def __init__(self, cbam_enabled=False, num_classes=10):
         super(SmallResNet, self).__init__()
         self.cbam_enabled = cbam_enabled
         self.inchannel = 64
+
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU()
         )
-        self.layer1 = self.make_layer(ResBlock, 64, 2, stride=1)
-        self.layer2 = self.make_layer(ResBlock, 128, 2, stride=2)
-        self.layer3 = self.make_layer(ResBlock, 256, 2, stride=2)
-        self.layer4 = self.make_layer(ResBlock, 512, 2, stride=2)
-        self.fc = nn.Linear(512, num_classes)
-        self.cbam1 = CBAM(64)
-        self.cbam2 = CBAM(128)
-        self.cbam3 = CBAM(256)
-        self.cbam4 = CBAM(512)
 
-    # 这个函数主要是用来，重复同一个残差块
-    def make_layer(self, block, channels, num_blocks, stride):
+        # 修改make_layer调用，传递use_cbam参数
+        self.layer1 = self.make_layer(ResBlock, 64, 2, stride=1, use_cbam=False)
+        self.layer2 = self.make_layer(ResBlock, 128, 2, stride=2, use_cbam=cbam_enabled)
+        self.layer3 = self.make_layer(ResBlock, 256, 2, stride=2, use_cbam=cbam_enabled)
+        self.layer4 = self.make_layer(ResBlock, 512, 2, stride=2, use_cbam=cbam_enabled)
+
+        self.fc = nn.Linear(512, num_classes)
+
+    # 修改make_layer函数以支持use_cbam参数
+    def make_layer(self, block, channels, num_blocks, stride, use_cbam=False):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
-            layers.append(block(self.inchannel, channels, stride))
+            layers.append(block(self.inchannel, channels, stride, use_cbam=use_cbam))
             self.inchannel = channels
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # 在这里，整个ResNet18的结构就很清晰了
-        if self.cbam_enabled:
-            out = self.conv1(x)
-            out = self.layer1(out)
-            out = self.cbam1(out)
-            out = self.layer2(out)
-            out = self.cbam2(out)
-            out = self.layer3(out)
-            out = self.cbam3(out)
-            out = self.layer4(out)
-            out = self.cbam4(out)
-        else:
-            out = self.conv1(x)
-            out = self.layer1(out)
-            out = self.layer2(out)
-            out = self.layer3(out)
-            out = self.layer4(out)
+        # 简化forward函数，CBAM现在在残差块内部处理
+        out = self.conv1(x)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
 
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
