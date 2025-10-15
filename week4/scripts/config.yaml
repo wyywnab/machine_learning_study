@@ -1,4 +1,4 @@
-name: baseline_enhancement_cbam
+name: test
 amp_enabled: true
 batch_size: 64
 cbam_enabled: true

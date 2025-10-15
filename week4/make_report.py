@@ -14,7 +14,6 @@ import sys
 import pandas as pd
 from pathlib import Path
 
-# 添加plot_curves模块的导入
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from plot_curves import plot_val_acc, plot_loss_for_exp
 
@@ -23,7 +22,6 @@ COLUMNS = ["exp_id", "exp_name", "seed", "epochs", "learning_rate", "optimizer",
 
 
 def get_environment_info(exp_id, experiments_dir):
-    """从实验目录的information.yaml文件中获取环境信息"""
     info_file = experiments_dir / exp_id / "information.yaml"
 
     if not info_file.exists():
@@ -47,10 +45,8 @@ def get_environment_info(exp_id, experiments_dir):
 
 
 def ensure_figures_exist(curves_csv, loss_exp, fig_dir):
-    """确保所需的图表文件存在，如果不存在则生成"""
     fig_dir.mkdir(parents=True, exist_ok=True)
 
-    # 读取曲线数据
     if not curves_csv.exists():
         print(f"Warning: Curves CSV file not found at {curves_csv}")
         return False
@@ -58,13 +54,11 @@ def ensure_figures_exist(curves_csv, loss_exp, fig_dir):
     try:
         df = pd.read_csv(curves_csv)
 
-        # 生成验证准确率图表
         val_acc_path = fig_dir / "val_acc.png"
         if not val_acc_path.exists():
             print(f"Generating validation accuracy plot: {val_acc_path}")
             plot_val_acc(df, val_acc_path)
 
-        # 生成指定实验的损失图表
         loss_path = fig_dir / f"loss_{loss_exp}.png"
         if not loss_path.exists() and loss_exp in df['exp_name'].values:
             print(f"Generating loss plot for {loss_exp}: {loss_path}")
@@ -89,17 +83,14 @@ def main():
     ap.add_argument("--curves_csv", type=Path, default=Path(os.path.join("scripts", "experiments", "all_curves.csv")))
     args = ap.parse_args()
 
-    # 确保图表目录存在并生成必要的图表
     figures_exist = ensure_figures_exist(args.curves_csv, args.loss_exp, args.fig_dir)
 
     df = pd.read_csv(args.exp_csv)
     md = []
     md.append("# Weekly Result (One-Pager)\n")
 
-    # 环境信息部分 - 使用指定实验的信息
     md.append("## Environment Information\n")
 
-    # 获取指定实验的环境信息
     loss_exp_info = None
     if args.loss_exp in df['exp_name'].values:
         exp_id = df[df['exp_name'] == args.loss_exp]['exp_id'].iloc[0]
@@ -119,10 +110,8 @@ def main():
     else:
         md.append("*Environment information not available for the specified experiment*\n")
 
-    # 实验摘要表格
     md.append("## Summary Table\n")
     sub = df[COLUMNS].copy()
-    # round numbers if present
     numeric_columns = ["seed", "epochs", "learning_rate", "top-1_acc", "duration"]
     for col in numeric_columns:
         if col in sub.columns:
@@ -132,10 +121,8 @@ def main():
                 pass
     md.append(sub.to_markdown(index=False))
 
-    # 曲线图部分
     md.append("\n\n## Curves\n")
 
-    # 添加验证准确率图表
     val_acc_path = args.fig_dir / "val_acc.png"
     if val_acc_path.exists():
         md.append(f"### Validation Accuracy\n")
@@ -144,7 +131,6 @@ def main():
         md.append(f"### Validation Accuracy\n")
         md.append("*Validation accuracy plot not available*\n\n")
 
-    # 添加指定实验的损失图表
     loss_path = args.fig_dir / f"loss_{args.loss_exp}.png"
     if loss_path.exists():
         md.append(f"### Loss Curves for {args.loss_exp}\n")
@@ -153,11 +139,9 @@ def main():
         md.append(f"### Loss Curves for {args.loss_exp}\n")
         md.append(f"*Loss plot for experiment '{args.loss_exp}' not available*\n\n")
 
-    # 写入报告文件
     args.out_md.write_text("\n".join(md), encoding="utf-8")
     print(f"Report generated: {args.out_md}")
 
-    # 打印图表状态
     if figures_exist:
         print("Figures included in the report:")
         if val_acc_path.exists():

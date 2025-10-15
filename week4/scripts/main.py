@@ -17,12 +17,11 @@ from week4.scripts.Utils import draw_confusion_matrix
 from week4.scripts.trainer import Trainer
 
 
-def save_confusion_matrix_and_accuracy(data_loader, net, checkpoint, config, current_folder, device):
+def save_confusion_matrix_and_accuracy(data_loader, net, epoch, exp_name, current_folder, device):
     label_true = []
     label_pred = []
     map = [[0] * 10 for _ in range(10)]
 
-    net.load_state_dict(checkpoint["net_state_dict"])
     net.eval()
 
     with torch.no_grad():
@@ -41,9 +40,9 @@ def save_confusion_matrix_and_accuracy(data_loader, net, checkpoint, config, cur
     label_name = CIFAR10(data_root_folder, download=True, train=True).classes
 
     draw_confusion_matrix(label_true, label_pred, label_name, display=False,
-                          title=f'Confusion Matrix of {config["model"]} Best Epoch {checkpoint["epoch"]}',
+                          title=f'Confusion Matrix of {exp_name} Epoch {epoch}',
                           save_path=os.path.join(current_folder,
-                                                 'confusion_matrix_final_epoch_{}.png'.format(checkpoint["epoch"])))
+                                                 f'confusion_matrix_final_{exp_name}_epoch_{epoch}.png'))
 
     accuracy_single = {}
     correct_sum = 0
@@ -58,7 +57,7 @@ def save_confusion_matrix_and_accuracy(data_loader, net, checkpoint, config, cur
 
     return accuracy_single, overall_accuracy
 
-def get_data_loaders(batch_size, seed, num_workers, transform_str):
+def get_data_loaders(data_root, batch_size, seed, num_workers, transform_str):
     """train_set_transform = transforms.Compose([
         transforms.RandomRotation(degrees=(-10, 10)),  # 随机旋转 ±10 度
         transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # 随机平移
@@ -89,7 +88,7 @@ def get_data_loaders(batch_size, seed, num_workers, transform_str):
 
     train_compose_list += test_compose_list
 
-    train_set = CIFAR10(data_root_folder, transform=transforms.Compose(train_compose_list), download=True, train=True)
+    train_set = CIFAR10(data_root, transform=transforms.Compose(train_compose_list), download=True, train=True)
 
     # 划分训练集和验证集
     train_size = int(0.8 * len(train_set))
@@ -104,7 +103,7 @@ def get_data_loaders(batch_size, seed, num_workers, transform_str):
         transforms.Normalize((0.1307,), (0.3081,))
     ])"""
 
-    test_set = CIFAR10(data_root_folder, transform=transforms.Compose(test_compose_list), download=True, train=False)
+    test_set = CIFAR10(data_root, transform=transforms.Compose(test_compose_list), download=True, train=False)
 
     train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True, pin_memory=True,
                               num_workers=num_workers)
@@ -135,9 +134,9 @@ def get_nvidia_driver_version():
     except Exception as e:
         return f"发生错误: {str(e)}"
 
-if __name__ == "__main__":
-    data_root_folder = "..\..\cifar10_data"
+data_root_folder = "..\..\cifar10_data"
 
+if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     exp_id = "exp{}".format(datetime.now().strftime("%y%m%d_%H%M%S"))
     current_folder = os.path.join("experiments", exp_id)
@@ -156,13 +155,15 @@ if __name__ == "__main__":
     with open(os.path.join(current_folder, "config.yaml"), "w", encoding="utf-8") as file:
         yaml.dump(config, file, allow_unicode=True)
 
-    train_loader, val_loader, test_loader = get_data_loaders(config["batch_size"], config["seed"], config["num_workers"], config["data_enhancement"])
+    train_loader, val_loader, test_loader = get_data_loaders(data_root_folder, config["batch_size"], config["seed"], config["num_workers"], config["data_enhancement"])
     trainer = Trainer(current_folder, config, device, train_loader, val_loader)
     trainer.train()
     checkpoint = trainer.get_best_checkpoint()
     model = trainer.get_model()
 
-    accuracy_single, test_acc = save_confusion_matrix_and_accuracy(test_loader, model, checkpoint, config, current_folder, device)
+    model.load_state_dict(checkpoint["net_state_dict"])
+
+    accuracy_single, test_acc = save_confusion_matrix_and_accuracy(test_loader, model, checkpoint["epoch"], config["name"], current_folder, device)
 
     final_metrics = trainer.get_final_metrics()
     inf = {

@@ -10,6 +10,23 @@ from Utils import EarlyStopping
 from week4.scripts.models.resnet18_ext import Resnet18Ext
 
 
+def get_net(config, device):
+    if config["model"] == "SmallCNN":
+        if config["cbam_enabled"]:
+            net = SmallCNNCBAM()
+        else:
+            net = SmallCNN()
+    elif config["model"] == "SmallResNet":
+        net = SmallResNet(cbam_enabled=config["cbam_enabled"])
+    elif config["model"] == "Resnet18Ext":
+        net = Resnet18Ext(cbam_enabled=config["cbam_enabled"])
+    else:
+        print("Illegal Model Name!")
+        exit(0)
+
+    net = net.to(device)
+    return net
+
 class Trainer:
     def __init__(self, base_folder, config, device, train_loader, val_loader):
         self.folder = base_folder
@@ -54,20 +71,8 @@ class Trainer:
         torch.backends.cudnn.benchmark = False
     
         writer = SummaryWriter(log_dir=self.folder)
-    
-        if config["model"] == "SmallCNN":
-            if config["cbam_enabled"]:
-                net = SmallCNNCBAM()
-            else:
-                net = SmallCNN()
-        elif config["model"] == "SmallResNet":
-            net = SmallResNet(cbam_enabled=config["cbam_enabled"])
-        elif config["model"] == "Resnet18Ext":
-            net = Resnet18Ext(cbam_enabled=config["cbam_enabled"])
-        else:
-            print("Illegal Model Name!")
-            exit(0)
-        net = net.to(self.device)
+
+        net = get_net(config, self.device)
     
         #optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
         #optimizer = torch.optim.Adam(net.parameters(), lr=config["learning_rate"])
