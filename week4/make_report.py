@@ -126,7 +126,7 @@ def main():
     val_acc_path = args.fig_dir / "val_acc.png"
     if val_acc_path.exists():
         md.append(f"### Validation Accuracy\n")
-        md.append(f"![*Figure: Validation accuracy across all experiments0*]({os.path.normpath(val_acc_path)})\n")
+        md.append(f"![*Figure: Validation accuracy across all experiments0*]({val_acc_path.as_posix()})\n")
     else:
         md.append(f"### Validation Accuracy\n")
         md.append("*Validation accuracy plot not available*\n\n")
@@ -134,7 +134,7 @@ def main():
     loss_path = args.fig_dir / f"loss_{args.loss_exp}.png"
     if loss_path.exists():
         md.append(f"### Loss Curves for {args.loss_exp}\n")
-        md.append(f"![*Figure: Training and validation loss for experiment '{args.loss_exp}'*]({os.path.normpath(loss_path)})")
+        md.append(f"![*Figure: Training and validation loss for experiment '{args.loss_exp}'*]({loss_path.as_posix()})")
     else:
         md.append(f"### Loss Curves for {args.loss_exp}\n")
         md.append(f"*Loss plot for experiment '{args.loss_exp}' not available*\n\n")
