@@ -3,7 +3,7 @@
 /cifar10_data
 /emnist_data
 __pycache__
-/bak_*
+**/bak_*/
 *.bak
 *.docx
 *.pt

@@ -1,0 +1,21 @@
+best_epoch: 70
+cuda_version: '12.9'
+date: '2025-10-14T18:05:57.747389'
+driver_version: '581.08'
+graphic_card: NVIDIA GeForce RTX 5060 Laptop GPU
+name: baseline
+test_accuracy: 0.7892
+test_accuracy_single:
+  airplane: 0.8
+  automobile: 0.882
+  bird: 0.693
+  cat: 0.606
+  deer: 0.77
+  dog: 0.74
+  frog: 0.804
+  horse: 0.826
+  ship: 0.89
+  truck: 0.881
+torch_version: 2.8.0+cu129
+torchvision_version: 0.23.0+cu129
+total_time: 6830.926998138428

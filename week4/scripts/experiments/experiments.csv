@@ -1,0 +1,5 @@
+exp_id,exp_name,seed,epochs,learning_rate,optimizer,lr_scheduler,data_enhancement,cbam_enabled,top-1_acc,duration
+exp251014_161144,baseline_cbam,608,70,0.0001,AdamW,CosineAnnealingLR,,True,0.7892,6830.926998138428
+exp251014_181251,baseline,608,75,0.0001,AdamW,CosineAnnealingLR,,False,0.7873,6910.662246465683
+exp251014_200933,baseline_enhancement,608,64,0.0001,AdamW,CosineAnnealingLR,affine,False,0.9034,6087.783708333969
+exp251015_084809,baseline_enhancement_cbam,608,67,0.0001,AdamW,CosineAnnealingLR,affine,True,0.8883,6538.057639837265

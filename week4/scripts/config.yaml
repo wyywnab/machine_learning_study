@@ -1,9 +1,9 @@
-name: baseline
+name: baseline_enhancement_cbam
 amp_enabled: true
 batch_size: 64
 cbam_enabled: true
 clip_value: 1.0
-data_enhancement:
+data_enhancement: affine
 early_stopping_patience: 15
 eta_min: 3.0e-06
 gamma: 0.1

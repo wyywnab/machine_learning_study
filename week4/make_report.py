@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from plot_curves import plot_val_acc, plot_loss_for_exp
 
-COLUMNS = ["exp_id", "exp_name", "seed", "max_epoch", "learning_rate", "optimizer",
+COLUMNS = ["exp_id", "exp_name", "seed", "epochs", "learning_rate", "optimizer",
            "lr_scheduler", "data_enhancement", "cbam_enabled", "top-1_acc", "duration"]
 
 
@@ -81,12 +81,12 @@ def ensure_figures_exist(curves_csv, loss_exp, fig_dir):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--exp_csv", type=Path, default=Path(os.path.join("scripts", "experiments0", "experiments0.csv")))
+    ap.add_argument("--exp_csv", type=Path, default=Path(os.path.join("scripts", "experiments", "experiments.csv")))
     ap.add_argument("--out_md", type=Path, default=Path("report.md"))
     ap.add_argument("--fig_dir", type=Path, default=Path("figs"))
-    ap.add_argument("--loss_exp", type=str, default="baseline+enhancement100")
-    ap.add_argument("--experiments_dir", type=Path, default=Path(os.path.join("scripts", "experiments0")))
-    ap.add_argument("--curves_csv", type=Path, default=Path(os.path.join("scripts", "experiments0", "all_curves.csv")))
+    ap.add_argument("--loss_exp", type=str, default="baseline_enhancement")
+    ap.add_argument("--experiments_dir", type=Path, default=Path(os.path.join("scripts", "experiments")))
+    ap.add_argument("--curves_csv", type=Path, default=Path(os.path.join("scripts", "experiments", "all_curves.csv")))
     args = ap.parse_args()
 
     # 确保图表目录存在并生成必要的图表
@@ -123,7 +123,7 @@ def main():
     md.append("## Summary Table\n")
     sub = df[COLUMNS].copy()
     # round numbers if present
-    numeric_columns = ["seed", "max_epoch", "learning_rate", "top-1_acc", "duration"]
+    numeric_columns = ["seed", "epochs", "learning_rate", "top-1_acc", "duration"]
     for col in numeric_columns:
         if col in sub.columns:
             try:
