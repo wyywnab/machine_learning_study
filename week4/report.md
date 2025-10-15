@@ -26,7 +26,7 @@
 
 ### Validation Accuracy
 
-![*Figure: Validation accuracy across all experiments0*](figs\val_acc.png)
+![*Figure: Validation accuracy across all experiments0*](figsval_acc.png)
 
 ### Loss Curves for baseline_enhancement
 
