@@ -76,7 +76,7 @@ def ensure_figures_exist(curves_csv, loss_exp, fig_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exp_csv", type=Path, default=Path(os.path.join("scripts", "experiments", "experiments.csv")))
-    ap.add_argument("--out_md", type=Path, default=Path("report.md"))
+    ap.add_argument("--out_md", type=Path, default=Path("README.md"))
     ap.add_argument("--fig_dir", type=Path, default=Path("figs"))
     ap.add_argument("--loss_exp", type=str, default="baseline_enhancement")
     ap.add_argument("--experiments_dir", type=Path, default=Path(os.path.join("scripts", "experiments")))
