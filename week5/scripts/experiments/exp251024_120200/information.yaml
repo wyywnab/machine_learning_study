@@ -1,0 +1,13 @@
+best_epoch: 120
+cuda: true
+cuda_version: '12.6'
+date: '2025-10-24T13:12:38.986034'
+driver_version: '550.54'
+graphic_card: Tesla V100-SXM2-32GB
+name: baseline_cbam
+test_accuracy: 0.8494
+torch_version: 2.7.1+cu126
+torchvision_version: 0.22.1+cu126
+total_time: 4224.489717721939
+weights: model_final_epoch_120.pth
+weights_sha256: 8009af64ff670b9e975aa1afd4b9b76aef18260b4fd57e77b37b0c30724de18f

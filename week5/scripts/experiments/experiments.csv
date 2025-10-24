@@ -1,0 +1,3 @@
+exp_id,exp_name,seed,epochs,learning_rate,optimizer,lr_scheduler,data_augmentation,mix_up,cut_mix,cbam_enabled,top-1_acc,duration
+exp251024_104137,baseline_stdaug,608,155,0.0005,AdamW,,standard,False,False,False,0.9458,4583.955414533615
+exp251024_120200,baseline_cbam,608,120,0.0005,AdamW,,,False,False,True,0.8494,4224.489717721939

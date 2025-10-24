@@ -1,0 +1,11 @@
+Class,Precision,Recall,F1-Score,Support,Status
+airplane,0.8538,0.8640,0.8588,1000,✅ Normal
+automobile,0.9561,0.9140,0.9346,1000,✅ Normal
+bird,0.8540,0.7370,0.7912,1000,✅ Normal
+cat,0.7300,0.7030,0.7163,1000,✅ Normal
+deer,0.7657,0.8890,0.8228,1000,✅ Normal
+dog,0.8069,0.7690,0.7875,1000,✅ Normal
+frog,0.8333,0.9200,0.8745,1000,✅ Normal
+horse,0.9051,0.8580,0.8809,1000,✅ Normal
+ship,0.8843,0.9400,0.9113,1000,✅ Normal
+truck,0.9212,0.9000,0.9105,1000,✅ Normal
