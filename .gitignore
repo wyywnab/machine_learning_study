@@ -2,6 +2,7 @@
 /.idea
 /cifar10_data
 /emnist_data
+/grad-cam-pytorch
 __pycache__
 **/bak_*/
 *.bak
